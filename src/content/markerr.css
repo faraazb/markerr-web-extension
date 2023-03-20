@@ -1,0 +1,141 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --accent-primary: #7234cd;
+}
+
+#markerr-app-container {
+    position: absolute;
+    z-index: 999999;
+    height: 100%;
+    width: 100%;
+}
+
+#markerr-canvas-container {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    z-index: 9999;
+}
+
+#markerr-tools-container {
+    position: absolute;
+    top: 0;
+    z-index: 9999999;
+}
+
+.markerr-panel {
+    position: absolute;
+    top: 100px;
+    left: 20px;
+    width: 45px;
+    background-color: #293845;
+    border-radius: 8px;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    row-gap: 5px;
+}
+
+#markerr-drag-handle {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+    cursor: move;
+}
+
+.tool-button {
+    width: 100%;
+    padding: 4px;
+    height: 30px;
+    background: transparent;
+    border: none;
+    display: flex;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.tool-button:not(.tool-button--selected):hover {
+    background: #4c5f6f;
+}
+
+.tool-button--selected {
+    background: #7234cd;
+}
+
+.tool-button__icon {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.tool-button>.icon {
+    max-width: 30px;
+    fill: #888888;
+}
+
+.tool-button>.stroked-icon {
+    fill: none;
+    stroke: #fff;
+}
+
+.tool-button--selected>.icon {
+    fill: #fff;
+}
+
+.tool-button--selected>.stroked-icon {
+    fill: none;
+    stroke: #fff;
+}
+
+.panel-drag-handle {
+    height: 15px;
+    width: 15px;
+}
+
+.panel-drag-handle>svg {
+    fill: #fff;
+}
+
+.icon {
+    display: block;
+    height: auto;
+    width: 100%;
+    fill: #fff;
+}
+
+.stroked-icon {
+    stroke: #fff;
+    fill: none;
+}
+
+/* inspector styles */
+.markerr-inspector-element {
+    cursor: pointer;
+    position: absolute;
+    pointer-events: none;
+    border: 2px dashed tomato;
+    z-index: 99999;
+    /* transition: all 200ms; */
+    background-color: rgba(180, 187, 105, 0.2);
+}
+
+.markerr-select-by-class-button {
+    font-size: 11px;
+    color: var(--accent-primary);
+    background: rgba(255, 255, 255, 0.66);
+    border-radius: 5px;
+    padding: 2px 4px;
+    border: 1px solid var(--accent-primary);
+}
+
+.markerr-select-by-class-button:hover {
+    display: block;
+}

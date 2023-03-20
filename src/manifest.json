@@ -1,0 +1,34 @@
+{
+    "manifest_version": 3,
+    "name": "Simple Markerr",
+    "description": "A webpage annotation tool",
+    "version": "0.0.1",
+    "permissions": [
+        "tabs",
+        "contextMenus"
+    ],
+    "host_permissions": [
+        "https://*/*"
+    ],
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "action": {
+        "default_popup": "popup/index.html"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://*/*",
+                "http://*/*"
+            ],
+            "js": [
+                "./content/markerr.js"
+            ],
+            "css": [
+                "./content/markerr.css"
+            ]
+        }
+    ]
+}
