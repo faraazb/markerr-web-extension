@@ -29,7 +29,7 @@
 }
 
 .markerr-panel {
-    position: absolute;
+    position: fixed;
     top: 100px;
     left: 20px;
     width: 45px;
@@ -125,6 +125,21 @@
     z-index: 99999;
     /* transition: all 200ms; */
     background-color: rgba(180, 187, 105, 0.2);
+}
+
+.markerr-annotation-label {
+    /* background: rgba(255, 255, 255, 0.71); */
+    background: rgb(255, 166, 166);
+    color: #000;
+    border: none;
+    border-image: initial;
+    outline: none;
+    padding: 2px 4px;
+    border-radius: 5px;
+}
+
+.markerr-annotation-label:focus {
+    border-bottom: 1px solid rgb(0, 0, 0);
 }
 
 .markerr-select-by-class-button {

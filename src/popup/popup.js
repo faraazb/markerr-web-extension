@@ -1,36 +1,22 @@
 import { h, render } from "preact";
-import { useState, useEffect } from "preact/hooks";
-import el from "../utils/element";
-
-const popupRoot = el("div#popupRoot");
-document.body.appendChild(popupRoot);
 
 const Popup = () => {
-    const [port, setPort] = useState(null);
 
-    useEffect(() => {
-        (async () => {
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            console.log(tab);
-            const port = await chrome.tabs.connect(tab.id);
-            setPort(port);
-        })();
-    }, []);
-
-    const initPanel = () => {
-        console.log("initializing panel");
-        if (port) {
-            port.postMessage({ action: "INIT" });
-        }
+    const startMarkerr = async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const response = await chrome.tabs.sendMessage(tab.id, { action: "INIT" });
+        // console.log(response);
     }
 
     return (
-        <div id="markerr-popup">
-            <div>
-                <button onClick={initPanel}>Annotate</button>
+        <main>
+            <div id="markerr-popup">
+                <div>
+                    <button onClick={startMarkerr}>Annotate</button>
+                </div>
             </div>
-        </div>
+        </main>
     )
 }
 
-render(<Popup />, popupRoot)
+render(<Popup />, document.body)

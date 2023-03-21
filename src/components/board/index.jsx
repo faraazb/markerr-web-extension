@@ -20,7 +20,6 @@ const Board = () => {
                 click: function (element, event) {
                     event.preventDefault();
                     //   TODO Resolve inspect on tools panel
-                    console.log(element);
                     const { x, y, top, left, width, height } =
                         element.getBoundingClientRect();
                     drawRectangle({
@@ -101,6 +100,9 @@ const initCanvas = () => {
     let transformer = new Konva.Transformer({ ignoreStroke: true });
     layer.add(transformer);
 
+    const stageContainer = stage.container();
+    stageContainer.tabIndex = 1;
+
     // draw a dotted rectangle preview
     let draftRectangle = new Konva.Rect({
         x: 0,
@@ -113,9 +115,6 @@ const initCanvas = () => {
     draftRectangle.listening(false);
     layer.add(draftRectangle);
 
-    const container = stage.container();
-    container.focus();
-
     // selection rectangle
     let selectionRectangle = new Konva.Rect({
         fill: "rgba(113, 52, 205, 0.1)",
@@ -126,7 +125,7 @@ const initCanvas = () => {
     layer.add(selectionRectangle);
 
     // keyboard events - delete
-    window.addEventListener("keydown", (e) => {
+    stageContainer.addEventListener("keydown", (e) => {
         if (e.key === "Backspace" || e.key === "Delete") {
             e.preventDefault();
             selectedShapes.forEach((shape) => {
@@ -174,19 +173,28 @@ const initCanvas = () => {
                 if (element.dataset?.markerr !== "true") {
                     const { x, y, width, height } =
                         element.getBoundingClientRect();
-                    drawRectangle({
+                    const rectangle = drawRectangle({
                         x: x + window.scrollX,
                         y: y + window.scrollY,
                         width,
                         height,
                         node: element,
+                        focusLabel: false,
                     });
                 }
             }
         }
     }
 
-    function drawRectangle({ x, y, width, height, node, ...rest }) {
+    function drawRectangle({
+        x,
+        y,
+        width,
+        height,
+        node,
+        focusLabel = true,
+        ...rest
+    }) {
         const newRect = new Konva.Rect({
             name: "rect",
             x: x,
@@ -201,11 +209,13 @@ const initCanvas = () => {
             rest,
         });
 
-        const label = el("input", {
+        const label = el("input.markerr-annotation-label", {
             type: "text",
-            style: `position: absolute; top: ${
-                y + height + 5
-            }px; left: ${x}px; z-index: 9999999;`,
+            style: `position: absolute; 
+                top: ${y + height + 5}px; 
+                left: ${x}px; 
+                z-index: 9999999;`,
+            placeholder: "label",
         });
 
         newRect.markerrLabel = label;
@@ -220,9 +230,9 @@ const initCanvas = () => {
                 "button.markerr-select-by-class-button",
                 {
                     style: `display: none;
-            position: absolute;
-            top: ${labelY + labelHeight + window.scrollY + 2}px;
-            left: ${x}px; z-index: 9999999;`,
+                        position: absolute;
+                        top: ${labelY + labelHeight + window.scrollY + 2}px;
+                        left: ${x}px; z-index: 9999999;`,
                     onclick: () => selectElementsByClassName(node.className),
                 },
                 "Annotate similar"
@@ -230,27 +240,59 @@ const initCanvas = () => {
 
             newRect.markerrSelectSimilarButton = selectSimilarButton;
 
-            let hideSimilarTimeout;
-            newRect.on("mouseover", (event) => {
-                // clearTimeout(hideSimilarTimeout);
-                selectSimilarButton.style.display = "block";
-            });
-
-            newRect.on("mouseleave", (event) => {
-                clearTimeout(hideSimilarTimeout);
-                hideSimilarTimeout = setTimeout(
-                    () => (selectSimilarButton.style.display = "none"),
-                    1500
-                );
-            });
-
             markerrAppContainer.appendChild(selectSimilarButton);
         }
 
+        let hideSimilarTimeout;
+        newRect.on("mouseover", (event) => {
+            // clearTimeout(hideSimilarTimeout);
+            const { markerrSelectSimilarButton: selectSimilarButton } = newRect;
+            if (selectSimilarButton) {
+                selectSimilarButton.style.display = "block";
+            }
+            if (label.value === "") {
+                label.style.display = "block";
+                label.placeholder = "label";
+            }
+        });
+
+        newRect.on("mouseleave", (event) => {
+            const { markerrSelectSimilarButton: selectSimilarButton } = newRect;
+
+            clearTimeout(hideSimilarTimeout);
+            hideSimilarTimeout = setTimeout(() => {
+                if (selectSimilarButton) {
+                    selectSimilarButton.style.display = "none";
+                }
+                if (label.value === "") {
+                    label.style.display = "none";
+                }
+            }, 1500);
+        });
+
+        newRect.on("transform", (event) => {
+            label.style.top = `${
+                newRect.y() + newRect.height() * newRect.scaleY() + 5
+            }px`;
+            label.style.left = `${newRect.x()}px`;
+
+            // disable select similar button when el annotation is moved
+            if (newRect.markerrSelectSimilarButton) {
+                newRect.markerrSelectSimilarButton.remove();
+                newRect.markerrSelectSimilarButton = undefined;
+            }
+
+            if (newRect.node) {
+                newRect.node.dataset.markerr = "moved";
+            }
+        });
+
         newRect.on("dragmove", (event) => {
-            const { x, y } = newRect.getAbsolutePosition();
-            label.style.top = `${y + newRect.height() + 5}px`;
-            label.style.left = `${x}px`;
+            // const { x, y } = newRect.getAbsolutePosition();
+            label.style.top = `${
+                newRect.y() + newRect.height() * newRect.scaleY() + 5
+            }px`;
+            label.style.left = `${newRect.x()}px`;
 
             // disable select similar button when el annotation is moved
             if (newRect.markerrSelectSimilarButton) {
@@ -265,7 +307,11 @@ const initCanvas = () => {
 
         layer.add(newRect);
         stage.draw();
-        label.focus();
+        if (focusLabel) {
+            label.focus();
+        } else {
+            label.style.display = "none";
+        }
     }
 
     // drag from and to positions
@@ -339,8 +385,10 @@ const initCanvas = () => {
         if (!selectionRectangle.visible()) {
             return;
         }
+
         mode = "";
         e.evt.preventDefault();
+
         // update visibility in timeout, so we can check it in click event
         setTimeout(() => {
             selectionRectangle.visible(false);
@@ -352,6 +400,13 @@ const initCanvas = () => {
             Konva.Util.haveIntersection(box, shape.getClientRect())
         );
         selectShapes(nodes);
+
+        // nothing selected, clicked on stage, remove focus from annotation label
+        if (nodes.length === 0) {
+            if (document.activeElement instanceof HTMLInputElement) {
+                document.activeElement.blur();
+            }
+        }
     });
 
     // clicks should select/deselect shapes
@@ -363,6 +418,7 @@ const initCanvas = () => {
 
         // if click on empty area - remove all selections
         if (e.target === stage) {
+            stageContainer.focus();
             selectShapes([]);
             return;
         }

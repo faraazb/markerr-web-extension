@@ -1,10 +1,10 @@
-import { useState } from "preact/hooks";
 import Draggable from "react-draggable";
 import { useStore } from "../../store";
 import {
     CursorPointer,
     DragHandle,
     RectangleTool,
+    Screenshot,
     Spline,
 } from "../../utils/icons";
 
@@ -12,6 +12,7 @@ const tools = [
     { id: 1, Icon: <CursorPointer /> },
     { id: 2, Icon: <RectangleTool height={"24px"} /> },
     { id: 3, Icon: <Spline /> },
+    {id: 4, Icon: <Screenshot />, onClick: () => console.log("Take screenshot")}
 ];
 
 const Tools = () => {
@@ -25,7 +26,7 @@ const Tools = () => {
                         <DragHandle transform={"rotate(90)"} />
                     </span>
                 </div>
-                {tools.map(({ id, Icon }) => {
+                {tools.map(({ id, Icon, onClick }) => {
                     return (
                         <button
                             key={`markerr-tool-${id}`}
@@ -34,7 +35,7 @@ const Tools = () => {
                                     ? " " + "tool-button--selected"
                                     : ""
                             }`}
-                            onClick={() => setSelectedTool(id)}
+                            onClick={onClick || (() => setSelectedTool(id))}
                         >
                             <span className="tool-button__icon">{Icon}</span>
                         </button>
