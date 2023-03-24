@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@medv/finder": "^3.0.0",
+    "downshift": "^7.6.0",
     "konva": "^8.4.2",
     "preact": "^10.13.1",
     "react-draggable": "^4.4.5",

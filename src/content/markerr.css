@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
 * {
     margin: 0;
     padding: 0;
@@ -6,11 +8,14 @@
 
 :root {
     --accent-primary: #7234cd;
+    --layer0-z: 999999; /* App container - canvas*/
+    --layer1-z: 9999999; /* Tools container */
 }
 
 #markerr-app-container {
+    font-family: "Inter", sans-serif;
     position: absolute;
-    z-index: 999999;
+    z-index: var(--layer0-z);
     height: 100%;
     width: 100%;
 }
@@ -19,13 +24,13 @@
     position: absolute;
     height: 100%;
     width: 100%;
-    z-index: 9999;
+    /* z-index: 9999; */
 }
 
 #markerr-tools-container {
     position: absolute;
     top: 0;
-    z-index: 9999999;
+    z-index: var(--layer1-z);
 }
 
 .markerr-panel {
@@ -122,35 +127,104 @@
     position: absolute;
     pointer-events: none;
     border: 2px dashed tomato;
-    z-index: 99999;
+    z-index: var(--layer0-z);
     /* transition: all 200ms; */
-    background-color: rgba(180, 187, 105, 0.2);
+    /* background-color: rgba(180, 187, 105, 0.2); */
 }
 
 .markerr-annotation-label {
     /* background: rgba(255, 255, 255, 0.71); */
-    background: rgb(255, 166, 166);
-    color: #000;
-    border: none;
-    border-image: initial;
-    outline: none;
-    padding: 2px 4px;
-    border-radius: 5px;
+    background: #ff0000 !important;
+    /* background: linear-gradient(135deg, #ffff88 81%, #ffff88 82%, #ffff88 82%, #ffffc6 100%);
+    border: 1px solid #E8E8E8;
+    border-top: 60px solid #fdfd86; */
+    color: #fff !important;
+    border: none !important;
+    outline: none !important;
+    padding: 4px 8px !important;
+    border-radius: 5px !important;
+    font-size: 16px !important;
 }
 
-.markerr-annotation-label:focus {
-    border-bottom: 1px solid rgb(0, 0, 0);
+.markerr-annotation-label::after {
+    background: rgba(0, 0, 0, 0.2);
+    box-shadow: 2px 15px 5px rgba(0, 0, 0, 0.40);
+    transform: matrix(-1, -0.1, 0, 1, 0, 0);
 }
+
+/* .markerr-annotation-label:focus {
+    border-bottom: 1px solid rgb(0, 0, 0);
+} */
+
+.markerr-annotation-label::placeholder {
+    color: #e0e0e0;
+    font-size: 12px;
+}
+
 
 .markerr-select-by-class-button {
-    font-size: 11px;
-    color: var(--accent-primary);
-    background: rgba(255, 255, 255, 0.66);
+    font-size: 12px;
+    /* color: var(--accent-primary); */
+    color: #fff;
+    /* background: rgba(255, 255, 255, 0.66); */
+    background: #7134cdb9;
     border-radius: 5px;
     padding: 2px 4px;
-    border: 1px solid var(--accent-primary);
+    border: 2px solid var(--accent-primary);
 }
 
 .markerr-select-by-class-button:hover {
     display: block;
+}
+
+
+.markerr-combobox {
+    user-select: none;
+}
+
+.markerr-combobox__menu {
+    width: 100%;
+    position: absolute;
+    overflow: scroll;
+    max-height: 180px;
+    background-color: #ffffff;
+    color: var(--text-1);
+    border-radius: 4px;
+    list-style-type: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.markerr-combobox__menu[data-open="true"] {
+    display: block;
+    box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px,
+        rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px;
+    padding: 5px 0;
+    z-index: var(--layer0-z);
+}
+
+.markerr-combobox__menu-message {
+    font-size: 11px;
+    padding: 5px;
+    color: #4b4b4b;
+}
+
+.markerr-combobox__menu-messag--disbaled {
+    font-size: 11px;
+    padding: 5px;
+    color: #989898;
+}
+
+.markerr-combobox__item {
+    padding: 5px;
+    user-select: none;
+    transition: background 20ms ease-in 0s;
+    cursor: pointer;
+    margin-left: 4px;
+    margin-right: 4px;
+    border-radius: 3px;
+}
+
+.markerr-combobox__item.highlight {
+    background: rgba(55, 53, 47, 0.08) none repeat scroll 0% 0%;
 }

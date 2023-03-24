@@ -8,11 +8,18 @@ const Popup = () => {
         // console.log(response);
     }
 
+    const loginWithGoogle = async () => {
+        console.log("Logging in")
+        const response = await chrome.runtime.sendMessage({action: "LOGIN"});
+        console.log(response);
+    }
+
     return (
         <main>
             <div id="markerr-popup">
                 <div>
                     <button onClick={startMarkerr}>Annotate</button>
+                    <button onClick={loginWithGoogle}>Login with Google</button>
                 </div>
             </div>
         </main>

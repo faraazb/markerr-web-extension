@@ -5,7 +5,8 @@
     "version": "0.0.1",
     "permissions": [
         "tabs",
-        "contextMenus"
+        "contextMenus",
+        "identity"
     ],
     "host_permissions": [
         "https://*/*"

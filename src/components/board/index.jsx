@@ -1,25 +1,52 @@
-import { useEffect } from "preact/hooks";
+import { useEffect, useRef } from "preact/hooks";
 import Konva from "konva";
 import "theroomjs/dist/theroom.min.js";
-import { tools, useStore } from "../../store";
+import { getStore, tools, useStore } from "../../store";
 import el from "../../utils/element";
+import { render } from "preact";
+import Combobox, { LabelCombobox } from "../combobox";
+import Rectangle from "../../canvas/rectangle";
 
-let tool = null;
+let toolId = null;
+
+function isFixedOrSticky(node) {
+    while (node && node.nodeName.toLowerCase() !== "body") {
+        let position = window
+            .getComputedStyle(node)
+            .getPropertyValue("position")
+            .toLowerCase();
+        if (position === "fixed" || position === "sticky") {
+            return { result: false, node };
+        }
+        node = node.parentNode;
+    }
+    return { result: true, node };
+}
 
 const Board = () => {
+    const [labels, setLabels] = useStore.labels();
     const [selectedTool] = useStore.selectedTool();
+    const [nodes, setNodes] = useStore.nodes();
+    const canvasContainer = useRef();
 
     useEffect(() => {
         console.log("Board rendered");
-        const drawRectangle = initCanvas();
+        const [drawRectangle] = initCanvas(nodes, setNodes);
         if (theRoom) {
             theRoom.configure({
                 inspector: "#markerr-inspector",
                 excludes: ["#markerr-tools-container *"],
                 blockRedirection: true,
                 click: function (element, event) {
+                    // console.log(event)
                     event.preventDefault();
-                    //   TODO Resolve inspect on tools panel
+                    event.stopPropagation();
+                    const { result, node } = isFixedOrSticky(element);
+                    console.log("picked element fixed or sticky", result, node);
+                    // console.log(result, node);
+                    // if (result === false) {
+                    //     node.style.position = "static";
+                    // }
                     const { x, y, top, left, width, height } =
                         element.getBoundingClientRect();
                     drawRectangle({
@@ -27,16 +54,25 @@ const Board = () => {
                         y: y + window.scrollY,
                         width,
                         height,
-                        node: element,
+                        element,
+                        adjustOnScroll: !result,
                     });
                 },
+                // hook: function (event) {
+                //     event.preventDefault();
+                //     if (event.target instanceof HTMLButtonElement) {
+                //         console.log(event.target);
+                //         console.log("is button");
+                //         return false;
+                //     }
+                // },
             });
         }
     }, []);
 
     useEffect(() => {
         console.log("Tool changed");
-        tool = selectedTool;
+        toolId = selectedTool;
         const markerrAppContainer = document.getElementById(
             "markerr-app-container"
         );
@@ -64,25 +100,45 @@ const Board = () => {
                 markerrInspectorEl.style.display = "none";
             }
         }
+        // canvasContainer.current.focus();
     }, [selectedTool]);
 
     return (
         <>
-            <div id="markerr-canvas-container"></div>
+            <div ref={canvasContainer} id="markerr-canvas-container"></div>
         </>
     );
 };
 
 const initCanvas = () => {
+    // const [labels, setLabels] = getStore.labels();
+    // const [toolId] = getStore.selectedTool();
+    const [tool, setTool] = getStore.selectedTool();
+    const scrollAdjustNodes = [];
+
     const markerrAppContainer = document.getElementById(
         "markerr-app-container"
     );
 
-    let width = window.innerWidth;
-    let height = window.innerHeight;
+    const body = document.body;
+    const html = document.documentElement;
+    let height = Math.max(
+        body.scrollHeight,
+        body.offsetHeight,
+        html.clientHeight,
+        html.scrollHeight,
+        html.offsetHeight
+    );
+    let width = Math.max(
+        body.scrollWidth,
+        body.offsetWidth,
+        html.clientWidth,
+        html.scrollWidth,
+        html.offsetWidth
+    );
 
-    width = document.documentElement.scrollWidth;
-    height = document.documentElement.scrollHeight;
+    // let width = document.documentElement.scrollWidth;
+    // let height = document.documentElement.scrollHeight;
 
     let selectedShapes = [];
 
@@ -93,8 +149,15 @@ const initCanvas = () => {
         height: height,
     });
     let layer = new Konva.Layer({ draggable: false });
+    // let secondaryLayer = new Konva.Layer({ draggable: false });
+    // secondaryLayer.size({
+    //     height: 100,
+    //     width: 100,
+    // });
+    // console.log(secondaryLayer.height());
 
     stage.add(layer);
+    // stage.add(secondaryLayer);
     stage.draw();
 
     let transformer = new Konva.Transformer({ ignoreStroke: true });
@@ -102,6 +165,23 @@ const initCanvas = () => {
 
     const stageContainer = stage.container();
     stageContainer.tabIndex = 1;
+
+    document.addEventListener("scroll", (event) => {
+        scrollAdjustNodes.forEach((node) => {
+            const { x, y, top, left } = node.element.getBoundingClientRect();
+            const { height } =
+                node.markerrNodeLabelContainer.getBoundingClientRect();
+            // console.log(y + window.scrollY);
+            node.position({ x: x, y: y + window.scrollY });
+            node.markerrNodeLabelContainer.style.top = `${top - height - 5}px`;
+            // maybe apply the position related propeties of the
+            // parent node that was sticky or fixed
+            node.markerrNodeLabelContainer.style.position = "fixed";
+
+            if (node.markerrSelectSimilarButton) {
+            }
+        });
+    });
 
     // draw a dotted rectangle preview
     let draftRectangle = new Konva.Rect({
@@ -129,7 +209,7 @@ const initCanvas = () => {
         if (e.key === "Backspace" || e.key === "Delete") {
             e.preventDefault();
             selectedShapes.forEach((shape) => {
-                shape.markerrLabel.remove();
+                shape.markerrNodeLabelContainer.remove();
                 if (shape.node) {
                     shape.node.dataset.markerr = "deleted";
                 }
@@ -139,6 +219,12 @@ const initCanvas = () => {
                 shape.destroy();
             });
             selectShapes([]);
+        } else if (e.key === "v") {
+            setTool(1);
+        } else if (e.key === "r") {
+            setTool(2);
+        } else if (e.key === "p") {
+            setTool(3);
         }
     });
 
@@ -191,10 +277,12 @@ const initCanvas = () => {
         y,
         width,
         height,
-        node,
+        element,
         focusLabel = true,
+        adjustOnScroll = false,
         ...rest
     }) {
+        console.log("Drawing");
         const newRect = new Konva.Rect({
             name: "rect",
             x: x,
@@ -202,38 +290,49 @@ const initCanvas = () => {
             width: width,
             height: height,
             stroke: "red",
-            strokeWidth: 2,
+            strokeWidth: 4,
             listening: true,
             draggable: true,
             strokeScaleEnabled: false,
             rest,
         });
 
-        const label = el("input.markerr-annotation-label", {
-            type: "text",
+        newRect.markerrId = crypto.randomUUID();
+        newRect.markerrLabel = "";
+
+        const labelContainer = el(`div#${newRect.markerrId}`, {
             style: `position: absolute; 
                 top: ${y + height + 5}px; 
                 left: ${x}px; 
                 z-index: 9999999;`,
-            placeholder: "label",
         });
+        newRect.markerrNodeLabelContainer = labelContainer;
+        markerrAppContainer.appendChild(labelContainer);
 
-        newRect.markerrLabel = label;
-        markerrAppContainer.appendChild(label);
+        render(
+            <LabelCombobox
+                setLabelTitle={(title) => (newRect.markerrLabel = title)}
+            />,
+            labelContainer
+        );
 
-        if (node) {
-            newRect.node = node;
-            node.dataset.markerr = true;
-            const { y: labelY, height: labelHeight } =
-                label.getBoundingClientRect();
+        const { y: labelY, height: labelHeight } =
+            labelContainer.getBoundingClientRect();
+
+        labelContainer.style.top = `${y - labelHeight - 5}px`;
+
+        if (element) {
+            newRect.element = element;
+            element.dataset.markerr = true;
             const selectSimilarButton = el(
                 "button.markerr-select-by-class-button",
+                // labelY + labelHeight + window.scrollY + 2
                 {
                     style: `display: none;
                         position: absolute;
-                        top: ${labelY + labelHeight + window.scrollY + 2}px;
+                        top: ${y + height + 5}px;
                         left: ${x}px; z-index: 9999999;`,
-                    onclick: () => selectElementsByClassName(node.className),
+                    onclick: () => selectElementsByClassName(element.className),
                 },
                 "Annotate similar"
             );
@@ -241,18 +340,22 @@ const initCanvas = () => {
             newRect.markerrSelectSimilarButton = selectSimilarButton;
 
             markerrAppContainer.appendChild(selectSimilarButton);
+
+            if (adjustOnScroll) {
+                scrollAdjustNodes.push(newRect);
+            }
         }
 
         let hideSimilarTimeout;
         newRect.on("mouseover", (event) => {
-            // clearTimeout(hideSimilarTimeout);
+            clearTimeout(hideSimilarTimeout);
             const { markerrSelectSimilarButton: selectSimilarButton } = newRect;
             if (selectSimilarButton) {
                 selectSimilarButton.style.display = "block";
             }
-            if (label.value === "") {
-                label.style.display = "block";
-                label.placeholder = "label";
+            if (newRect.markerrLabel === "") {
+                labelContainer.style.display = "block";
+                labelContainer.placeholder = "Add a label";
             }
         });
 
@@ -264,17 +367,16 @@ const initCanvas = () => {
                 if (selectSimilarButton) {
                     selectSimilarButton.style.display = "none";
                 }
-                if (label.value === "") {
-                    label.style.display = "none";
+                if (newRect.markerrLabel === "") {
+                    labelContainer.style.display = "none";
                 }
             }, 1500);
         });
 
         newRect.on("transform", (event) => {
-            label.style.top = `${
-                newRect.y() + newRect.height() * newRect.scaleY() + 5
-            }px`;
-            label.style.left = `${newRect.x()}px`;
+            // newRect.y() + (newRect.height() * newRect.scaleY()) + 5
+            labelContainer.style.top = `${newRect.y() - labelHeight - 5}px`;
+            labelContainer.style.left = `${newRect.x()}px`;
 
             // disable select similar button when el annotation is moved
             if (newRect.markerrSelectSimilarButton) {
@@ -282,17 +384,15 @@ const initCanvas = () => {
                 newRect.markerrSelectSimilarButton = undefined;
             }
 
-            if (newRect.node) {
-                newRect.node.dataset.markerr = "moved";
+            if (newRect.element) {
+                newRect.element.dataset.markerr = "moved";
             }
         });
 
         newRect.on("dragmove", (event) => {
             // const { x, y } = newRect.getAbsolutePosition();
-            label.style.top = `${
-                newRect.y() + newRect.height() * newRect.scaleY() + 5
-            }px`;
-            label.style.left = `${newRect.x()}px`;
+            labelContainer.style.top = `${newRect.y() - labelHeight - 5}px`;
+            labelContainer.style.left = `${newRect.x()}px`;
 
             // disable select similar button when el annotation is moved
             if (newRect.markerrSelectSimilarButton) {
@@ -300,22 +400,32 @@ const initCanvas = () => {
                 newRect.markerrSelectSimilarButton = undefined;
             }
 
-            if (newRect.node) {
-                newRect.node.dataset.markerr = "moved";
+            if (newRect.element) {
+                newRect.element.dataset.markerr = "moved";
             }
         });
 
+        // if (adjustOnScroll) {
+        //     secondaryLayer.add(newRect);
+        // } else {
+        //     layer.add(newRect);
+        // }
         layer.add(newRect);
         stage.draw();
-        if (focusLabel) {
-            label.focus();
-        } else {
-            label.style.display = "none";
-        }
+
+        // const labelInput = document.querySelector(`#${newRect.markerrId} input`);
+        // if (labelInput && labelInput instanceof HTMLInputElement) {
+        //     if (focusLabel) {
+        //         labelInput.focus();
+        //     } else {
+        //         labelInput.style.display = "none";
+        //     }
+        // }
     }
 
     // drag from and to positions
     let x1, y1, x2, y2;
+
     stage.on("mousedown touchstart", (e) => {
         // do nothing if we mousedown on any shape
         if (e.target !== stage) {
@@ -323,27 +433,29 @@ const initCanvas = () => {
         }
         e.evt.preventDefault();
 
-        if (mode !== "drawing") {
+        if (toolId === 1) {
+            mode = "selecting";
+            x1 = stage.getPointerPosition().x;
+            y1 = stage.getPointerPosition().y;
+            x2 = stage.getPointerPosition().x;
+            y2 = stage.getPointerPosition().y;
+
+            selectionRectangle.visible(true);
+            selectionRectangle.width(0);
+            selectionRectangle.height(0);
+            return;
+        } else if (mode !== "drawing") {
             mode = "drawing";
-            if (tool === 2) {
+            if (toolId === 2) {
                 startDrag({ x: e.evt.layerX, y: e.evt.layerY });
                 return;
             }
         }
-        mode = "selecting";
-        x1 = stage.getPointerPosition().x;
-        y1 = stage.getPointerPosition().y;
-        x2 = stage.getPointerPosition().x;
-        y2 = stage.getPointerPosition().y;
-
-        selectionRectangle.visible(true);
-        selectionRectangle.width(0);
-        selectionRectangle.height(0);
     });
 
     stage.on("mousemove touchmove", (e) => {
         if (mode === "drawing") {
-            if (tool === 2) {
+            if (toolId === 2) {
                 updateDrag({ x: e.evt.layerX, y: e.evt.layerY });
                 return;
             }
@@ -367,18 +479,28 @@ const initCanvas = () => {
     });
 
     stage.on("mouseup touchend", (e) => {
+        stageContainer.focus();
         if (mode === "drawing") {
             mode = "";
-            if (tool === 2) {
+            if (toolId === 2) {
                 draftRectangle.visible(false);
+                if (
+                    draftRectangle.height() < 10 &&
+                    draftRectangle.width() < 10
+                ) {
+                    return;
+                }
                 drawRectangle({
                     x: draftRectangle.x(),
                     y: draftRectangle.y(),
                     width: draftRectangle.width(),
                     height: draftRectangle.height(),
                 });
+                draftRectangle.height(0);
+                draftRectangle.width(0);
                 return;
             }
+            return;
         }
 
         // do nothing if we didn't start selection
@@ -418,7 +540,7 @@ const initCanvas = () => {
 
         // if click on empty area - remove all selections
         if (e.target === stage) {
-            stageContainer.focus();
+            // stageContainer.focus();
             selectShapes([]);
             return;
         }
@@ -467,7 +589,7 @@ const initCanvas = () => {
         return { x1, y1, x2, y2 };
     }
 
-    return drawRectangle;
+    return [drawRectangle];
 };
 
 export default Board;

@@ -7,6 +7,8 @@ export const tools = {
     ELEMENT_PICKER: 3
 };
 
-export const { useStore } = createStore({
-    selectedTool: tools.SELECT
+export const { useStore, getStore } = createStore({
+    selectedTool: tools.SELECT,
+    labels: [{title: "Hello", value: "Hello"}],
+    nodes: {}
 });
